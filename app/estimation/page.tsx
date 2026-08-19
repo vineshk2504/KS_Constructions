@@ -2,24 +2,34 @@
 
 import { useMemo, useState } from "react";
 
+/* ---------------------------------------------------------------------- */
+/* Calculator data                                                        */
+/* ---------------------------------------------------------------------- */
+
 const TIERS = {
   tier1: {
-    label: "Tier 1 — Basic Specifications",
+    label: "Basic — Essential Specifications",
     shortLabel: "Basic",
     description: "Standard materials and workmanship, no upgrades.",
     ratePerSqft: 1800,
   },
   tier2: {
-    label: "Tier 2 — Standard Upgrades",
-    shortLabel: "Standard",
+    label: "Classic — Standard Upgrades",
+    shortLabel: "Classic",
     description: "Better fittings, tiling and finish quality.",
     ratePerSqft: 2000,
   },
   tier3: {
-    label: "Tier 3 — Premium Finishes",
+    label: "Premium — Elevated Finishes",
     shortLabel: "Premium",
     description: "Premium brands, finishes and fixtures throughout.",
     ratePerSqft: 2200,
+  },
+  tier4: {
+    label: "Royale — Signature Specifications",
+    shortLabel: "Royale",
+    description: "Top-tier materials, designer fittings and luxury finishes.",
+    ratePerSqft: 2500,
   },
 };
 
@@ -46,6 +56,54 @@ const FLOORS = {
 
 const RANGE_VARIANCE = 0.08;
 
+/* Placeholder trust stats — replace with real company figures. */
+const STATS = [
+  { value: "500+", label: "Homes Built" },
+  { value: "1,000+", label: "Quality Checks Completed" },
+  { value: "50+", label: "Areas Served" },
+];
+
+/* Materials comparison — illustrative specification tiers, replace with your actual supplier list. */
+const MATERIALS = [
+  { category: "Steel (TMT Bars)", tier1: "ISI-marked, standard grade", tier2: "Branded Fe500 grade", tier3: "Premium branded Fe500D grade", tier4: "Premium branded Fe550D grade" },
+  { category: "Cement", tier1: "OPC 43 grade, standard brand", tier2: "OPC 43 grade, reputed brand", tier3: "OPC 53 / PPC, reputed brand", tier4: "OPC 53 / PPC, premium brand" },
+  { category: "Flooring — Living & Dining", tier1: "Vitrified tiles, up to ₹45/sqft", tier2: "Vitrified tiles, up to ₹70/sqft", tier3: "Vitrified tiles or granite, up to ₹110/sqft", tier4: "Marble or premium vitrified, up to ₹150/sqft" },
+  { category: "Flooring — Bedrooms & Kitchen", tier1: "Ceramic tiles, up to ₹40/sqft", tier2: "Vitrified tiles, up to ₹60/sqft", tier3: "Vitrified tiles, up to ₹90/sqft", tier4: "Vitrified tiles, up to ₹120/sqft" },
+  { category: "Bathroom (CP) Fittings", tier1: "ISI-marked", tier2: "Branded, mid-range", tier3: "Branded, premium range", tier4: "Luxury branded" },
+  { category: "Main Door", tier1: "Flush door with laminate", tier2: "Flush door with veneer", tier3: "Engineered wood door", tier4: "Solid wood door" },
+  { category: "Windows", tier1: "Aluminium, powder-coated", tier2: "UPVC, standard profile", tier3: "UPVC, premium profile", tier4: "UPVC, premium profile with double glazing option" },
+  { category: "Interior Painting", tier1: "Distemper", tier2: "Premium emulsion", tier3: "Luxury emulsion", tier4: "Luxury emulsion with textured finish option" },
+  { category: "Electrical Switches & Sockets", tier1: "Standard, ISI-marked", tier2: "Branded modular", tier3: "Premium branded modular", tier4: "Designer branded modular" },
+  { category: "Water Storage (Overhead + Sump)", tier1: "1000L + 4000L", tier2: "1500L + 5000L", tier3: "2000L + 6000L", tier4: "2500L + 8000L" },
+];
+
+const FAQS = [
+  {
+    q: "What is a house construction cost calculator?",
+    a: "It's a tool that gives you an instant, package-wise estimate of what your home will cost to build, based on your plot size, built-up area, floors, city and the finish quality you choose.",
+  },
+  {
+    q: "How accurate is this estimate?",
+    a: "This is a preliminary estimate meant for early budgeting. Your final cost depends on the actual site condition, soil type, design complexity, structural requirements and material choices, which we assess during a site visit.",
+  },
+  {
+    q: "What's included in each package tier?",
+    a: "Each tier — Basic, Classic, Premium and Royale — specifies the brand and quality level of steel, cement, flooring, fittings, doors, windows, paint and electrical components used in your build. See the comparison table above for details.",
+  },
+  {
+    q: "Why does construction cost vary by city?",
+    a: "Labour rates, material transport costs and local regulatory requirements differ from city to city, which is why we apply a city-specific adjustment on top of the base rate.",
+  },
+  {
+    q: "What's the difference between plot area and built-up area?",
+    a: "Plot area is the total size of your land. Built-up area is the actual constructed floor area, which is smaller than the plot area once you account for setbacks, FAR/FSI limits and local regulations.",
+  },
+  {
+    q: "Can I get a detailed, itemised quote after this estimate?",
+    a: "Yes — use \"Send Estimate by Email/SMS\" above or request a callback below, and our team will follow up with a detailed, line-item quote for your specific project.",
+  },
+];
+
 function formatINR(amount) {
   if (!isFinite(amount) || amount <= 0) return "₹0";
   if (amount >= 100000) return `₹${(amount / 100000).toFixed(2)}L`;
@@ -59,6 +117,10 @@ function isValidEmail(email) {
 function isValidPhone(phone) {
   return /^[6-9]\d{9}$/.test(phone.trim());
 }
+
+/* ---------------------------------------------------------------------- */
+/* Page                                                                    */
+/* ---------------------------------------------------------------------- */
 
 export default function Page() {
   const [plotWidth, setPlotWidth] = useState("30");
@@ -75,6 +137,14 @@ export default function Page() {
   const [errors, setErrors] = useState({});
   const [submitStatus, setSubmitStatus] = useState("idle");
   const [showSendForm, setShowSendForm] = useState(false);
+
+  const [faqOpen, setFaqOpen] = useState(null);
+
+  const [advisorName, setAdvisorName] = useState("");
+  const [advisorPhone, setAdvisorPhone] = useState("");
+  const [advisorLocation, setAdvisorLocation] = useState("hyderabad");
+  const [advisorErrors, setAdvisorErrors] = useState({});
+  const [advisorStatus, setAdvisorStatus] = useState("idle");
 
   const plotArea = useMemo(() => {
     const w = parseFloat(plotWidth);
@@ -121,8 +191,6 @@ export default function Page() {
     e.preventDefault();
     if (!validate()) return;
     setSubmitStatus("submitting");
-    // NOTE: /api/send-estimate doesn't exist in this preview environment,
-    // so this simulates the request instead of actually calling it.
     try {
       await new Promise((resolve) => setTimeout(resolve, 700));
       setSubmitStatus("success");
@@ -135,6 +203,26 @@ export default function Page() {
     if (typeof window !== "undefined") window.print();
   };
 
+  const validateAdvisor = () => {
+    const next = {};
+    if (!advisorName.trim()) next.name = "Enter your name.";
+    if (!isValidPhone(advisorPhone)) next.phone = "Enter a valid 10-digit mobile number.";
+    setAdvisorErrors(next);
+    return Object.keys(next).length === 0;
+  };
+
+  const handleAdvisorSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateAdvisor()) return;
+    setAdvisorStatus("submitting");
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      setAdvisorStatus("success");
+    } catch {
+      setAdvisorStatus("error");
+    }
+  };
+
   return (
     <main className="ks-page">
       <p className="brand-eyebrow">KS CONSTRUCTIONS</p>
@@ -142,6 +230,15 @@ export default function Page() {
       <p className="page-sub">
         Estimate project cost using plot size, built-up area, floors and construction quality.
       </p>
+
+      <div className="stats-bar">
+        {STATS.map((s) => (
+          <div key={s.label} className="stat-chip">
+            <span className="stat-value">{s.value}</span>
+            <span className="stat-label">{s.label}</span>
+          </div>
+        ))}
+      </div>
 
       <div className="estimator-grid">
         <div className="card">
@@ -269,7 +366,7 @@ export default function Page() {
                       {TIERS[key].label} — ₹{effectiveRate(key)}/sqft
                     </span>
                     <span style={{ display: "block", fontSize: 13, opacity: 0.75 }}>
-                      {TIERS[key].description} Base ₹{TIERS[key].ratePerSqft}/sqft in {CITIES[city].label} ({AREAS[area].label.toLowerCase()}).
+                      {TIERS[key].description}
                     </span>
                   </span>
                 </label>
@@ -447,11 +544,177 @@ export default function Page() {
         </div>
       </div>
 
+      {/* ---------------- Materials comparison table ---------------- */}
+      <section className="page-section">
+        <h2 className="section-heading">What's Included in Each Package</h2>
+        <p className="section-subheading">
+          Specifications shown apply across cities. Rates on the calculator above already reflect
+          your selected city and locality.
+        </p>
+        <div className="materials-table-wrap">
+          <table className="materials-table">
+            <thead>
+              <tr>
+                <th scope="col">Feature</th>
+                {Object.keys(TIERS).map((key) => (
+                  <th key={key} scope="col" className={key === "tier2" ? "materials-top-pick" : ""}>
+                    {TIERS[key].shortLabel}
+                    {key === "tier2" && <span className="top-pick-badge">Top Pick</span>}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {MATERIALS.map((row) => (
+                <tr key={row.category}>
+                  <td className="materials-row-label">{row.category}</td>
+                  <td>{row.tier1}</td>
+                  <td>{row.tier2}</td>
+                  <td>{row.tier3}</td>
+                  <td>{row.tier4}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* ---------------- FAQ ---------------- */}
+      <section className="page-section">
+        <h2 className="section-heading">Frequently Asked Questions</h2>
+        <div className="faq-list">
+          {FAQS.map((item, i) => {
+            const open = faqOpen === i;
+            return (
+              <div key={item.q} className={`faq-item ${open ? "faq-item-open" : ""}`}>
+                <button
+                  type="button"
+                  className="faq-question"
+                  aria-expanded={open}
+                  aria-controls={`faq-panel-${i}`}
+                  onClick={() => setFaqOpen(open ? null : i)}
+                >
+                  <span>{item.q}</span>
+                  <span className="faq-icon" aria-hidden="true">{open ? "−" : "+"}</span>
+                </button>
+                {open && (
+                  <p id={`faq-panel-${i}`} className="faq-answer">
+                    {item.a}
+                  </p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ---------------- Talk to an advisor ---------------- */}
+      <section className="page-section advisor-section">
+        <div className="advisor-grid">
+          <div>
+            <h2 className="section-heading">Talk to an Advisor</h2>
+            <p className="section-subheading">
+              Our advisor will call you back to walk through packages, materials and a realistic
+              timeline for your build, and help you finalise a detailed budget.
+            </p>
+            <ul className="advisor-points">
+              <li>Free, no-obligation consultation</li>
+              <li>Callback within 2 working hours</li>
+              <li>Itemised quote follow-up</li>
+            </ul>
+          </div>
+
+          <div className="card advisor-form-card">
+            {advisorStatus === "success" ? (
+              <p role="status" className="success-note-dark">
+                Thanks — our advisor will call you back shortly.
+              </p>
+            ) : (
+              <form onSubmit={handleAdvisorSubmit} noValidate>
+                <div style={{ display: "grid", gap: 16 }}>
+                  <div>
+                    <label htmlFor="advisorName" className="field-label">Name</label>
+                    <input
+                      id="advisorName"
+                      type="text"
+                      value={advisorName}
+                      onChange={(e) => setAdvisorName(e.target.value)}
+                      className="text-input"
+                      style={{ width: "100%" }}
+                      aria-invalid={!!advisorErrors.name}
+                      aria-describedby={advisorErrors.name ? "advisorName-error" : undefined}
+                    />
+                    {advisorErrors.name && (
+                      <p id="advisorName-error" role="alert" className="field-error">
+                        {advisorErrors.name}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="advisorPhone" className="field-label">Phone Number</label>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <span className="phone-prefix">+91</span>
+                      <input
+                        id="advisorPhone"
+                        type="tel"
+                        inputMode="numeric"
+                        value={advisorPhone}
+                        onChange={(e) => setAdvisorPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                        className="text-input"
+                        style={{ flex: 1 }}
+                        aria-invalid={!!advisorErrors.phone}
+                        aria-describedby={advisorErrors.phone ? "advisorPhone-error" : undefined}
+                      />
+                    </div>
+                    {advisorErrors.phone && (
+                      <p id="advisorPhone-error" role="alert" className="field-error">
+                        {advisorErrors.phone}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label htmlFor="advisorLocation" className="field-label">Location</label>
+                    <select
+                      id="advisorLocation"
+                      value={advisorLocation}
+                      onChange={(e) => setAdvisorLocation(e.target.value)}
+                      className="text-input"
+                      style={{ width: "100%" }}
+                    >
+                      {Object.keys(CITIES).map((key) => (
+                        <option key={key} value={key}>{CITIES[key].label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {advisorStatus === "error" && (
+                    <p role="alert" className="field-error">
+                      Something went wrong. Please try again.
+                    </p>
+                  )}
+
+                  <button type="submit" disabled={advisorStatus === "submitting"} className="primary-button">
+                    {advisorStatus === "submitting" ? "Requesting…" : "Request a Callback"}
+                  </button>
+                  <p className="consent-note">
+                    By submitting this form, I confirm that I have read and agreed to accept KS
+                    Constructions' privacy policy.
+                  </p>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      </section>
+
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
 
         :root {
           --charcoal: #15151a;
+          --charcoal-2: #1e1e24;
           --cream: #f8f6f1;
           --gold: #c9a227;
           --gold-light: #e4c567;
@@ -489,6 +752,19 @@ export default function Page() {
           opacity: 0.75;
           margin: 0;
         }
+
+        .stats-bar {
+          display: flex;
+          gap: 32px;
+          flex-wrap: wrap;
+          margin-top: 28px;
+          padding: 20px 0;
+          border-top: 1px solid #e6e2d8;
+          border-bottom: 1px solid #e6e2d8;
+        }
+        .stat-chip { display: flex; flex-direction: column; }
+        .stat-value { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 600; color: var(--gold); }
+        .stat-label { font-size: 12.5px; opacity: 0.65; text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
 
         .estimator-grid {
           display: grid;
@@ -617,7 +893,7 @@ export default function Page() {
         .tier-table {
           width: 100%;
           border-collapse: collapse;
-          font-size: 14px;
+          font-size: 13.5px;
         }
         .tier-table th,
         .tier-table td {
@@ -641,7 +917,11 @@ export default function Page() {
         }
         .success-note {
           font-weight: 600;
-          color: #1a1a1a;
+          color: var(--gold-light);
+        }
+        .success-note-dark {
+          font-weight: 600;
+          color: var(--gold);
         }
 
         .primary-button {
@@ -655,17 +935,10 @@ export default function Page() {
           cursor: pointer;
           font-family: inherit;
         }
-        .primary-button:hover {
-          background: var(--gold-light);
-        }
-        .primary-button:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-        .primary-button:focus-visible {
-          outline: 2px solid var(--gold);
-          outline-offset: 2px;
-        }
+        .primary-button:hover { background: var(--gold-light); }
+        .primary-button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .primary-button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
         .secondary-button {
           padding: 13px 20px;
           font-size: 15px;
@@ -677,31 +950,81 @@ export default function Page() {
           cursor: pointer;
           font-family: inherit;
         }
-        .secondary-button:hover {
-          background: rgba(228, 197, 103, 0.1);
-        }
-        .secondary-button:focus-visible {
-          outline: 2px solid var(--gold-light);
-          outline-offset: 2px;
-        }
+        .secondary-button:hover { background: rgba(228, 197, 103, 0.1); }
+        .secondary-button:focus-visible { outline: 2px solid var(--gold-light); outline-offset: 2px; }
+
         .inline-send-form {
           margin-top: 16px;
           padding-top: 16px;
           border-top: 1px solid rgba(255,255,255,0.12);
         }
-        .field-label-on-dark {
-          color: #f5f3ee;
+        .field-label-on-dark { color: #f5f3ee; }
+
+        /* Page sections */
+        .page-section { margin-top: 72px; }
+        .section-heading {
+          font-family: 'Fraunces', serif;
+          font-size: 28px;
+          font-weight: 600;
+          margin: 0 0 10px;
+        }
+        .section-subheading {
+          font-size: 15px;
+          opacity: 0.7;
+          max-width: 680px;
+          line-height: 1.6;
+          margin: 0 0 28px;
         }
 
+        /* Materials table */
+        .materials-table-wrap { overflow-x: auto; border: 1px solid #e6e2d8; border-radius: 12px; background: #fff; }
+        .materials-table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 720px; }
+        .materials-table th, .materials-table td { text-align: left; padding: 12px 14px; border-bottom: 1px solid #eee7d8; }
+        .materials-table thead th { background: var(--charcoal); color: #f5f3ee; font-weight: 600; position: relative; }
+        .materials-top-pick { color: var(--gold-light) !important; }
+        .top-pick-badge { display: block; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold-light); margin-top: 2px; }
+        .materials-row-label { font-weight: 600; }
+        .materials-table tbody tr:last-child td { border-bottom: none; }
+
+        /* FAQ */
+        .faq-list { display: grid; gap: 12px; max-width: 800px; }
+        .faq-item { border: 1px solid #e6e2d8; border-radius: 10px; background: #fff; overflow: hidden; }
+        .faq-item-open { border-color: var(--gold); }
+        .faq-question {
+          width: 100%;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 16px;
+          padding: 16px 20px;
+          background: none;
+          border: none;
+          text-align: left;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          font-family: inherit;
+          color: var(--text-dark);
+        }
+        .faq-icon { font-size: 20px; color: var(--gold); flex-shrink: 0; line-height: 1; }
+        .faq-answer { padding: 0 20px 18px; font-size: 14px; line-height: 1.65; opacity: 0.75; margin: 0; }
+
+        /* Advisor */
+        .advisor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
+        .advisor-points { list-style: none; padding: 0; margin: 20px 0 0; display: grid; gap: 10px; font-size: 14px; }
+        .advisor-points li { padding-left: 22px; position: relative; }
+        .advisor-points li::before { content: "✓"; position: absolute; left: 0; color: var(--gold); font-weight: 700; }
+        .advisor-form-card { background: var(--charcoal-2); border: none; }
+        .advisor-form-card .field-label { color: #f5f3ee; }
+        .consent-note { font-size: 11.5px; opacity: 0.55; margin: 0; line-height: 1.5; }
+        .advisor-form-card .success-note-dark { color: var(--gold-light); }
+
         @media (max-width: 780px) {
-          .estimator-grid {
-            grid-template-columns: 1fr;
-          }
+          .estimator-grid { grid-template-columns: 1fr; }
+          .advisor-grid { grid-template-columns: 1fr; }
         }
         @media print {
-          form {
-            display: none;
-          }
+          form { display: none; }
         }
       `}</style>
     </main>
