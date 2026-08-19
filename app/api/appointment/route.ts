@@ -18,10 +18,29 @@ export async function POST(request: Request) {
       time,
     } = body;
 
+    if (
+      !name ||
+      !phone ||
+      !email ||
+      !projectType ||
+      !location ||
+      !budget ||
+      !date ||
+      !time
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Missing required appointment information.",
+        },
+        { status: 400 }
+      );
+    }
+
     const { data, error } = await resend.emails.send({
       from: "KS Constructions <onboarding@resend.dev>",
 
-      // CHANGE THIS TO THE OWNER'S EMAIL
+      // Owner email
       to: ["vineshkodipaka04@gmail.com"],
 
       subject: `New Appointment - ${name}`,
@@ -30,7 +49,6 @@ export async function POST(request: Request) {
         <h2>New Construction Appointment</h2>
 
         <h3>Customer Details</h3>
-
         <p><strong>Name:</strong> ${name}</p>
         <p><strong>Phone:</strong> ${phone}</p>
         <p><strong>Email:</strong> ${email}</p>
@@ -38,7 +56,6 @@ export async function POST(request: Request) {
         <hr />
 
         <h3>Project Details</h3>
-
         <p><strong>Project Type:</strong> ${projectType}</p>
         <p><strong>Project Location:</strong> ${location}</p>
         <p><strong>Budget:</strong> ${budget}</p>
@@ -46,17 +63,20 @@ export async function POST(request: Request) {
         <hr />
 
         <h3>Appointment</h3>
-
         <p><strong>Date:</strong> ${date}</p>
         <p><strong>Time:</strong> ${time}</p>
       `,
     });
 
     if (error) {
-      console.error(error);
+      console.error("RESEND ERROR:", error);
 
       return NextResponse.json(
-        { success: false, error },
+        {
+          success: false,
+          message: "Failed to send appointment email.",
+          error,
+        },
         { status: 500 }
       );
     }
@@ -66,12 +86,15 @@ export async function POST(request: Request) {
       data,
     });
   } catch (error) {
-    console.error(error);
+    console.error("APPOINTMENT API ERROR:", error);
 
     return NextResponse.json(
       {
         success: false,
-        message: "Unable to send appointment.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unable to send appointment.",
       },
       { status: 500 }
     );

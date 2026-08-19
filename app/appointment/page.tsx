@@ -66,7 +66,8 @@ export default function AppointmentPage() {
       }),
     });
 
-    const result = await response.json();
+    const text = await response.text();
+    const result = text ? JSON.parse(text) : {};
 
     if (!response.ok) {
       console.error("Appointment error:", result);
