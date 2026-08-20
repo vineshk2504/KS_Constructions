@@ -1,1 +1,1 @@
-export default function Footer(){return <footer className="footer"><div className="container"><b>BuildWell Constructions</b><p>Residential • Commercial • Renovation • Civil Supplies</p><p>© 2026 BuildWell Constructions. All rights reserved.</p></div></footer>}
+export default function Footer(){return <footer className="footer"><div className="container"><b>KS Constructions</b><p>Residential • Commercial • Renovation • Civil Supplies</p><p>© 2026 KS Constructions. All rights reserved.</p></div></footer>}
